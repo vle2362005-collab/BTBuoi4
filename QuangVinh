@@ -1,0 +1,140 @@
+using System;
+using System.Windows.Forms;
+
+namespace BTbuoi4
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+            Load += Form1_Load;
+            btnUpdate.Click += btnUpdate_Click;
+            btnDelete.Click += btnDelete_Click;
+            dgvStudent.SelectionChanged += dgvStudent_SelectionChanged;
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            cmbFaculty.Items.AddRange(new[] { "QTKD", "CNTT", "NNA" });
+            cmbFaculty.SelectedIndex = 0;
+
+            if (dgvStudent.Columns.Count == 0)
+            {
+                dgvStudent.Columns.Add("StudentID", "Mã số SV");
+                dgvStudent.Columns.Add("FullName", "Họ Tên");
+                dgvStudent.Columns.Add("Gender", "Giới Tính");
+                dgvStudent.Columns.Add("AverageScore", "Điểm TB");
+                dgvStudent.Columns.Add("Faculty", "Khoa");
+                dgvStudent.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+                dgvStudent.MultiSelect = false;
+                dgvStudent.AllowUserToAddRows = false;
+            }
+
+            optFemale.Checked = true;
+            UpdateGenderCount();
+        }
+
+        private void btnUpdate_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtStudentID.Text) ||
+                string.IsNullOrWhiteSpace(txtFullName.Text) ||
+                string.IsNullOrWhiteSpace(txtAverageScore.Text))
+            {
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin!");
+                return;
+            }
+
+            if (!double.TryParse(txtAverageScore.Text, out double avgScore))
+            {
+                MessageBox.Show("Điểm trung bình không hợp lệ!");
+                return;
+            }
+
+            string gender = optMale.Checked ? "Nam" : "Nữ";
+            string studentID = txtStudentID.Text.Trim();
+            string fullName = txtFullName.Text.Trim();
+            string faculty = cmbFaculty.SelectedItem.ToString();
+
+            DataGridViewRow existingRow = null;
+            foreach (DataGridViewRow row in dgvStudent.Rows)
+            {
+                if (row.Cells["StudentID"].Value?.ToString() == studentID)
+                {
+                    existingRow = row;
+                    break;
+                }
+            }
+
+            if (existingRow == null)
+            {
+                dgvStudent.Rows.Add(studentID, fullName, gender, avgScore, faculty);
+                MessageBox.Show("Thêm mới dữ liệu thành công!");
+            }
+            else
+            {
+                existingRow.Cells["FullName"].Value = fullName;
+                existingRow.Cells["Gender"].Value = gender;
+                existingRow.Cells["AverageScore"].Value = avgScore;
+                existingRow.Cells["Faculty"].Value = faculty;
+                MessageBox.Show("Cập nhật dữ liệu thành công!");
+            }
+
+            UpdateGenderCount();
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            string studentID = txtStudentID.Text.Trim();
+            DataGridViewRow rowToDelete = null;
+            foreach (DataGridViewRow row in dgvStudent.Rows)
+            {
+                if (row.Cells["StudentID"].Value?.ToString() == studentID)
+                {
+                    rowToDelete = row;
+                    break;
+                }
+            }
+
+            if (rowToDelete == null)
+            {
+                MessageBox.Show("Không tìm thấy MSSV cần xóa!");
+                return;
+            }
+
+            if (MessageBox.Show("Bạn có chắc muốn xóa?", "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                dgvStudent.Rows.Remove(rowToDelete);
+                MessageBox.Show("Xóa sinh viên thành công!");
+                UpdateGenderCount();
+            }
+        }
+
+        private void dgvStudent_SelectionChanged(object sender, EventArgs e)
+        {
+            if (dgvStudent.SelectedRows.Count == 0) return;
+            var row = dgvStudent.SelectedRows[0];
+            txtStudentID.Text = row.Cells["StudentID"].Value?.ToString();
+            txtFullName.Text = row.Cells["FullName"].Value?.ToString();
+            txtAverageScore.Text = row.Cells["AverageScore"].Value?.ToString();
+            cmbFaculty.SelectedItem = row.Cells["Faculty"].Value?.ToString();
+            if (row.Cells["Gender"].Value?.ToString() == "Nam")
+                optMale.Checked = true;
+            else
+                optFemale.Checked = true;
+        }
+
+        private void UpdateGenderCount()
+        {
+            int male = 0, female = 0;
+            foreach (DataGridViewRow row in dgvStudent.Rows)
+            {
+                if (row.IsNewRow) continue;
+                if (row.Cells["Gender"].Value?.ToString() == "Nam") male++;
+                else if (row.Cells["Gender"].Value?.ToString() == "Nữ") female++;
+            }
+            lblMaleCount.Text = $"Nam: {male}";
+            lblFemaleCount.Text = $"Nữ: {female}";
+        }
+    }
+}
